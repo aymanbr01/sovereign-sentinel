@@ -1,0 +1,92 @@
+{
+  "type": "record",
+  "name": "FxTick",
+  "namespace": "com.sentinel.forex",
+  "doc": "Raw FX tick event as received from an upstream liquidity provider. Registered in Confluent Schema Registry under subject 'forex-ticks-raw-value'. All timestamp fields are microseconds since UNIX epoch (UTC). FINMA Rz 53 compliance: pipeline_ingestion_timestamp_utc provides traceability from source to persistence.",
+  "fields": [
+    {
+      "name": "event_id",
+      "type": "string",
+      "doc": "UUID v4 assigned by the connector at ingestion time. Globally unique across the pipeline lifetime."
+    },
+    {
+      "name": "currency_pair",
+      "type": "string",
+      "doc": "ISO 4217 FX currency pair in BASE/QUOTE format (e.g. EUR/USD). Used as the Kafka record key and the PostgreSQL partition key."
+    },
+    {
+      "name": "bid_price",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 18,
+        "scale": 8
+      },
+      "doc": "Best bid price from the liquidity provider. Precision 18, scale 8 preserves institutional FX pip precision."
+    },
+    {
+      "name": "ask_price",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 18,
+        "scale": 8
+      },
+      "doc": "Best ask price from the liquidity provider. Must be >= bid_price (validated by ForexValidationJob rule CROSSED_MARKET)."
+    },
+    {
+      "name": "bid_size",
+      "type": [
+        "null",
+        {
+          "type": "bytes",
+          "logicalType": "decimal",
+          "precision": 18,
+          "scale": 8
+        }
+      ],
+      "default": null,
+      "doc": "Notional size available at the bid price in millions of base currency. Null if not provided by the liquidity provider."
+    },
+    {
+      "name": "ask_size",
+      "type": [
+        "null",
+        {
+          "type": "bytes",
+          "logicalType": "decimal",
+          "precision": 18,
+          "scale": 8
+        }
+      ],
+      "default": null,
+      "doc": "Notional size available at the ask price in millions of base currency. Null if not provided by the liquidity provider."
+    },
+    {
+      "name": "source_timestamp_micros",
+      "type": "long",
+      "doc": "Exchange or liquidity provider timestamp at tick origination. Microseconds since UNIX epoch (UTC). Used as event_time watermark in Spark. FINMA Rz 53: this is T0 in the timestamp provenance chain."
+    },
+    {
+      "name": "pipeline_ingestion_timestamp_utc",
+      "type": "long",
+      "doc": "Kafka Connect connector ingestion timestamp. Microseconds since UNIX epoch (UTC). Set in FxTickSourceTask.poll() — the earliest pipeline touch point. FINMA Rz 53: this is T1 in the timestamp provenance chain."
+    },
+    {
+      "name": "liquidity_provider_id",
+      "type": "string",
+      "doc": "Identifier of the liquidity provider that originated this tick (e.g. LP-SENTINEL-001). Required for audit traceability."
+    },
+    {
+      "name": "venue_id",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "Trading venue or ECN identifier (e.g. VENUE-EBS). Null if the tick did not originate from a named venue."
+    },
+    {
+      "name": "sequence_number",
+      "type": "long",
+      "doc": "Monotonically increasing sequence number per connector task and currency pair. Used as the Kafka Connect source offset for resumable ingestion after restarts."
+    }
+  ]
+}

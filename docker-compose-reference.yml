@@ -1,0 +1,32 @@
+# Reference architecture only — implementation details omitted
+# Full deployment available under commercial license
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    # Configuration omitted
+    
+  kafka-broker-1:
+    image: confluentinc/cp-kafka:7.6.0
+    # RF=3, min.insync.replicas=2, acks=all
+    # Configuration omitted
+    
+  kafka-broker-2:
+    image: confluentinc/cp-kafka:7.6.0
+    
+  kafka-broker-3:
+    image: confluentinc/cp-kafka:7.6.0
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.3
+    # MergeTree engine, 30d TTL
+    # Configuration omitted
+
+  prometheus:
+    image: prom/prometheus:v2.52.0
+    # 5s scrape interval, DORA metrics
+    # Configuration omitted
+
+  grafana:
+    image: grafana/grafana:10.4.2
+    # Configuration omitted

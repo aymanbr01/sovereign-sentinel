@@ -1,0 +1,207 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="780" viewBox="0 0 1200 780" font-family="'Courier New', Courier, monospace">
+
+  <!-- Background -->
+  <rect width="1200" height="780" fill="#0d1117"/>
+
+  <!-- Title -->
+  <text x="600" y="38" text-anchor="middle" font-size="20" font-weight="bold" fill="#e6edf3">THE SOVEREIGN SENTINEL — CURRENT ARCHITECTURE</text>
+  <text x="600" y="58" text-anchor="middle" font-size="12" fill="#8b949e">Real-Time Forex Data Pipeline · Local PoC Deployment</text>
+
+  <!-- ── LAYER LEGEND ── -->
+  <rect x="30" y="70" width="14" height="14" rx="3" fill="#1f6feb"/>
+  <text x="50" y="82" font-size="11" fill="#8b949e">Ingestion</text>
+  <rect x="130" y="70" width="14" height="14" rx="3" fill="#d97706"/>
+  <text x="150" y="82" font-size="11" fill="#8b949e">Kafka</text>
+  <rect x="210" y="70" width="14" height="14" rx="3" fill="#16a34a"/>
+  <text x="230" y="82" font-size="11" fill="#8b949e">Storage</text>
+  <rect x="310" y="70" width="14" height="14" rx="3" fill="#7c3aed"/>
+  <text x="330" y="82" font-size="11" fill="#8b949e">Observability</text>
+
+  <!-- ═══════════════════════════════════════════════
+       LAYER 1 — INGESTION  (blue)
+  ═══════════════════════════════════════════════ -->
+
+  <!-- Binance WebSocket -->
+  <rect x="30" y="110" width="180" height="80" rx="8" fill="#0d2044" stroke="#1f6feb" stroke-width="2"/>
+  <text x="120" y="140" text-anchor="middle" font-size="13" font-weight="bold" fill="#58a6ff">Binance</text>
+  <text x="120" y="157" text-anchor="middle" font-size="12" fill="#58a6ff">WebSocket</text>
+  <text x="120" y="175" text-anchor="middle" font-size="10" fill="#8b949e">wss://stream.binance.com</text>
+
+  <!-- Arrow: Binance → LocalRunner -->
+  <line x1="210" y1="150" x2="270" y2="150" stroke="#1f6feb" stroke-width="2" marker-end="url(#arrowBlue)"/>
+  <text x="240" y="143" text-anchor="middle" font-size="9" fill="#58a6ff">bookTicker</text>
+  <text x="240" y="153" text-anchor="middle" font-size="9" fill="#58a6ff">3 pairs</text>
+
+  <!-- Scala LocalRunner -->
+  <rect x="270" y="100" width="200" height="100" rx="8" fill="#0d2044" stroke="#1f6feb" stroke-width="2"/>
+  <text x="370" y="127" text-anchor="middle" font-size="13" font-weight="bold" fill="#58a6ff">Scala LocalRunner</text>
+  <line x1="290" y1="135" x2="450" y2="135" stroke="#1f6feb" stroke-width="1" stroke-dasharray="4,3" opacity="0.4"/>
+  <text x="370" y="151" text-anchor="middle" font-size="10" fill="#8b949e">FxTickSourceTask</text>
+  <text x="370" y="165" text-anchor="middle" font-size="10" fill="#8b949e">LiveWebSocketClient</text>
+  <text x="370" y="179" text-anchor="middle" font-size="10" fill="#8b949e">SENTINEL_MODE=kafka</text>
+
+  <!-- Arrow: LocalRunner → Prometheus scrape endpoint -->
+  <line x1="370" y1="200" x2="370" y2="270" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrowPurple)"/>
+  <text x="385" y="240" font-size="9" fill="#a78bfa">:9091/metrics</text>
+
+  <!-- Arrow: LocalRunner → KafkaProducer -->
+  <line x1="470" y1="150" x2="540" y2="150" stroke="#1f6feb" stroke-width="2" marker-end="url(#arrowBlue)"/>
+  <text x="505" y="141" text-anchor="middle" font-size="9" fill="#58a6ff">acks=all</text>
+  <text x="505" y="152" text-anchor="middle" font-size="9" fill="#58a6ff">idempotent</text>
+  <text x="505" y="163" text-anchor="middle" font-size="9" fill="#58a6ff">batch 64KB/5ms</text>
+
+  <!-- KafkaProducer box (still ingestion layer) -->
+  <rect x="540" y="110" width="170" height="80" rx="8" fill="#0d2044" stroke="#1f6feb" stroke-width="2"/>
+  <text x="625" y="137" text-anchor="middle" font-size="13" font-weight="bold" fill="#58a6ff">KafkaProducer</text>
+  <line x1="558" y1="145" x2="692" y2="145" stroke="#1f6feb" stroke-width="1" stroke-dasharray="4,3" opacity="0.4"/>
+  <text x="625" y="159" text-anchor="middle" font-size="10" fill="#8b949e">enable.idempotence=true</text>
+  <text x="625" y="173" text-anchor="middle" font-size="10" fill="#8b949e">compression=none</text>
+
+  <!-- ═══════════════════════════════════════════════
+       LAYER 2 — KAFKA  (orange)
+  ═══════════════════════════════════════════════ -->
+
+  <!-- Arrow: KafkaProducer → Kafka Cluster -->
+  <line x1="710" y1="150" x2="780" y2="150" stroke="#d97706" stroke-width="2" marker-end="url(#arrowOrange)"/>
+  <text x="745" y="141" text-anchor="middle" font-size="9" fill="#fb923c">retries=MAX</text>
+  <text x="745" y="163" text-anchor="middle" font-size="9" fill="#fb923c">plaintext:9092</text>
+
+  <!-- Kafka Cluster -->
+  <rect x="780" y="90" width="220" height="170" rx="8" fill="#1a0f00" stroke="#d97706" stroke-width="2"/>
+  <text x="890" y="115" text-anchor="middle" font-size="13" font-weight="bold" fill="#fb923c">Kafka Cluster</text>
+  <line x1="798" y1="122" x2="982" y2="122" stroke="#d97706" stroke-width="1" stroke-dasharray="4,3" opacity="0.4"/>
+  <!-- Brokers -->
+  <rect x="798" y="130" width="55" height="28" rx="4" fill="#2a1800" stroke="#d97706" stroke-width="1"/>
+  <text x="825" y="149" text-anchor="middle" font-size="10" fill="#fb923c">broker-1</text>
+  <rect x="862" y="130" width="55" height="28" rx="4" fill="#2a1800" stroke="#d97706" stroke-width="1"/>
+  <text x="889" y="149" text-anchor="middle" font-size="10" fill="#fb923c">broker-2</text>
+  <rect x="926" y="130" width="55" height="28" rx="4" fill="#2a1800" stroke="#d97706" stroke-width="1"/>
+  <text x="953" y="149" text-anchor="middle" font-size="10" fill="#fb923c">broker-3</text>
+  <!-- Topic info -->
+  <text x="890" y="180" text-anchor="middle" font-size="10" fill="#fb923c" font-weight="bold">forex.ticks.raw</text>
+  <text x="890" y="195" text-anchor="middle" font-size="10" fill="#8b949e">RF=3 · 6 partitions</text>
+  <text x="890" y="210" text-anchor="middle" font-size="10" fill="#8b949e">min.insync.replicas=2</text>
+  <text x="890" y="225" text-anchor="middle" font-size="10" fill="#8b949e">retention=7d</text>
+  <text x="890" y="245" text-anchor="middle" font-size="10" fill="#8b949e">key: {pair}:{ts_micros}</text>
+
+  <!-- Arrow: Kafka → Persistence Consumer -->
+  <line x1="890" y1="260" x2="890" y2="340" stroke="#d97706" stroke-width="2" marker-end="url(#arrowOrange)"/>
+  <text x="905" y="305" font-size="9" fill="#fb923c">poll()</text>
+  <text x="905" y="317" font-size="9" fill="#fb923c">isolation=</text>
+  <text x="905" y="329" font-size="9" fill="#fb923c">read_committed</text>
+
+  <!-- ═══════════════════════════════════════════════
+       LAYER 3 — STORAGE  (green)
+  ═══════════════════════════════════════════════ -->
+
+  <!-- Python Persistence Consumer -->
+  <rect x="730" y="340" width="225" height="100" rx="8" fill="#001a0a" stroke="#16a34a" stroke-width="2"/>
+  <text x="842" y="366" text-anchor="middle" font-size="13" font-weight="bold" fill="#4ade80">Python Persistence</text>
+  <text x="842" y="382" text-anchor="middle" font-size="13" font-weight="bold" fill="#4ade80">Consumer</text>
+  <line x1="748" y1="388" x2="937" y2="388" stroke="#16a34a" stroke-width="1" stroke-dasharray="4,3" opacity="0.4"/>
+  <text x="842" y="403" text-anchor="middle" font-size="10" fill="#8b949e">batch_size=500 · flush=2s</text>
+  <text x="842" y="418" text-anchor="middle" font-size="10" fill="#8b949e">auto.commit=false · group=sentinel</text>
+
+  <!-- Arrow: Consumer → ClickHouse -->
+  <line x1="842" y1="440" x2="842" y2="510" stroke="#16a34a" stroke-width="2" marker-end="url(#arrowGreen)"/>
+  <text x="857" y="478" font-size="9" fill="#4ade80">INSERT batch</text>
+  <text x="857" y="490" font-size="9" fill="#4ade80">native:9000</text>
+
+  <!-- ClickHouse -->
+  <rect x="680" y="510" width="325" height="120" rx="8" fill="#001a0a" stroke="#16a34a" stroke-width="2"/>
+  <text x="842" y="536" text-anchor="middle" font-size="13" font-weight="bold" fill="#4ade80">ClickHouse</text>
+  <line x1="698" y1="543" x2="987" y2="543" stroke="#16a34a" stroke-width="1" stroke-dasharray="4,3" opacity="0.4"/>
+  <text x="842" y="559" text-anchor="middle" font-size="10" fill="#8b949e">sentinel.forex_ticks · MergeTree engine</text>
+  <text x="842" y="574" text-anchor="middle" font-size="10" fill="#8b949e">ORDER BY (currency_pair, source_timestamp_micros)</text>
+  <text x="842" y="589" text-anchor="middle" font-size="10" fill="#8b949e">TTL source_timestamp_micros + INTERVAL 30 DAY</text>
+  <text x="842" y="604" text-anchor="middle" font-size="10" fill="#8b949e">Decimal(18,8) precision · dedup window=100</text>
+  <text x="842" y="619" text-anchor="middle" font-size="10" fill="#4ade80">localhost:8123 (HTTP) · localhost:9000 (native)</text>
+
+  <!-- ═══════════════════════════════════════════════
+       LAYER 4 — OBSERVABILITY  (purple)
+  ═══════════════════════════════════════════════ -->
+
+  <!-- Prometheus -->
+  <rect x="270" y="270" width="185" height="90" rx="8" fill="#110022" stroke="#7c3aed" stroke-width="2"/>
+  <text x="362" y="296" text-anchor="middle" font-size="13" font-weight="bold" fill="#a78bfa">Prometheus</text>
+  <line x1="288" y1="303" x2="437" y2="303" stroke="#7c3aed" stroke-width="1" stroke-dasharray="4,3" opacity="0.4"/>
+  <text x="362" y="318" text-anchor="middle" font-size="10" fill="#8b949e">scrape_interval: 5s</text>
+  <text x="362" y="333" text-anchor="middle" font-size="10" fill="#8b949e">localhost:9090</text>
+  <text x="362" y="348" text-anchor="middle" font-size="10" fill="#8b949e">target: LocalRunner :9091</text>
+
+  <!-- Arrow: Prometheus → Grafana -->
+  <line x1="362" y1="360" x2="362" y2="440" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrowPurple)"/>
+  <text x="377" y="405" font-size="9" fill="#a78bfa">PromQL</text>
+
+  <!-- ClickHouse → Grafana arrow -->
+  <line x1="730" y1="580" x2="545" y2="550" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrowPurple)"/>
+  <text x="640" y="558" text-anchor="middle" font-size="9" fill="#a78bfa">SQL · HTTP:8123</text>
+
+  <!-- Grafana -->
+  <rect x="170" y="440" width="380" height="140" rx="8" fill="#110022" stroke="#7c3aed" stroke-width="2"/>
+  <text x="360" y="467" text-anchor="middle" font-size="13" font-weight="bold" fill="#a78bfa">Grafana</text>
+  <line x1="188" y1="474" x2="532" y2="474" stroke="#7c3aed" stroke-width="1" stroke-dasharray="4,3" opacity="0.4"/>
+  <!-- Datasource badges -->
+  <rect x="190" y="482" width="150" height="24" rx="4" fill="#1a0033" stroke="#7c3aed" stroke-width="1"/>
+  <text x="265" y="499" text-anchor="middle" font-size="10" fill="#a78bfa">DS: Prometheus</text>
+  <rect x="350" y="482" width="185" height="24" rx="4" fill="#1a0033" stroke="#16a34a" stroke-width="1"/>
+  <text x="442" y="499" text-anchor="middle" font-size="10" fill="#4ade80">DS: ClickHouse (plugin)</text>
+  <!-- Dashboard info -->
+  <text x="360" y="525" text-anchor="middle" font-size="10" fill="#8b949e">FX Live Dashboard · localhost:3000</text>
+  <text x="360" y="540" text-anchor="middle" font-size="10" fill="#8b949e">Panels: Tick Rate · Bid/Ask · Spread · Consumer Lag</text>
+  <text x="360" y="555" text-anchor="middle" font-size="10" fill="#8b949e">admin / localdev_sentinel</text>
+  <text x="360" y="570" text-anchor="middle" font-size="10" fill="#a78bfa">auto-refresh: 5s</text>
+
+  <!-- ═══════════════════════════════════════════════
+       ZooKeeper (supporting infra)
+  ═══════════════════════════════════════════════ -->
+  <rect x="1010" y="150" width="160" height="80" rx="8" fill="#1a1000" stroke="#d97706" stroke-width="1.5" stroke-dasharray="6,3"/>
+  <text x="1090" y="177" text-anchor="middle" font-size="12" font-weight="bold" fill="#fb923c">ZooKeeper</text>
+  <line x1="1025" y1="183" x2="1155" y2="183" stroke="#d97706" stroke-width="1" stroke-dasharray="4,3" opacity="0.4"/>
+  <text x="1090" y="198" text-anchor="middle" font-size="10" fill="#8b949e">port 2181</text>
+  <text x="1090" y="213" text-anchor="middle" font-size="10" fill="#8b949e">healthcheck: srvr</text>
+  <!-- Arrow ZK ↔ Kafka -->
+  <line x1="1000" y1="190" x2="1010" y2="190" stroke="#d97706" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <line x1="1000" y1="190" x2="1000" y2="175" stroke="#d97706" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <line x1="1000" y1="175" x2="1010" y2="175" stroke="#d97706" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowOrange)"/>
+
+  <!-- ═══════════════════════════════════════════════
+       Docker Compose envelope
+  ═══════════════════════════════════════════════ -->
+  <rect x="15" y="620" width="1170" height="50" rx="6" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+  <text x="600" y="640" text-anchor="middle" font-size="11" font-weight="bold" fill="#8b949e">DOCKER COMPOSE STACK  ·  monitoring/docker-compose.yml</text>
+  <text x="600" y="657" text-anchor="middle" font-size="10" fill="#8b949e">sentinel-zookeeper · sentinel-broker-{1,2,3} · sentinel-clickhouse · sentinel-prometheus · sentinel-grafana · sentinel-persistence-consumer · sentinel-kafka-topic-init</text>
+
+  <!-- ═══════════════════════════════════════════════
+       Data flow summary bar
+  ═══════════════════════════════════════════════ -->
+  <rect x="15" y="685" width="1170" height="40" rx="6" fill="#0d1117" stroke="#21262d" stroke-width="1"/>
+  <text x="600" y="700" text-anchor="middle" font-size="10" fill="#8b949e">DATA FLOW:</text>
+  <text x="600" y="716" text-anchor="middle" font-size="10" fill="#58a6ff">Binance WS </text>
+  <text x="600" y="716" text-anchor="middle" font-size="10" fill="#8b949e">                   → LocalRunner → KafkaProducer </text>
+  <text x="600" y="716" text-anchor="middle" font-size="10" fill="#fb923c">                                                          → forex.ticks.raw </text>
+  <text x="600" y="716" text-anchor="middle" font-size="10" fill="#4ade80">                                                                                       → ClickHouse </text>
+  <text x="600" y="716" text-anchor="middle" font-size="10" fill="#a78bfa">                                                                                                          → Grafana</text>
+
+  <!-- Cleaner single flow label -->
+  <text x="600" y="716" text-anchor="middle" font-size="11" fill="#6e7681">Binance WS  →  LocalRunner  →  KafkaProducer  →  forex.ticks.raw  →  PersistenceConsumer  →  ClickHouse  →  Grafana</text>
+
+  <!-- ═══════════════════════════════════════════════
+       ARROWHEAD MARKERS
+  ═══════════════════════════════════════════════ -->
+  <defs>
+    <marker id="arrowBlue" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#1f6feb"/>
+    </marker>
+    <marker id="arrowOrange" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#d97706"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#16a34a"/>
+    </marker>
+    <marker id="arrowPurple" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#7c3aed"/>
+    </marker>
+  </defs>
+
+</svg>
