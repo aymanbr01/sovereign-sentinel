@@ -7,6 +7,13 @@
 [![Kafka](https://img.shields.io/badge/Apache%20Kafka-3.7.x-231F20?style=flat-square&logo=apachekafka)](https://kafka.apache.org/)
 [![Spark](https://img.shields.io/badge/Apache%20Spark-3.5.x-E25A1C?style=flat-square&logo=apachespark)](https://spark.apache.org/)
 
+> **Notice:** Architecture, compliance documentation, and design 
+> specifications are published for public evaluation. The full, 
+> production-ready implementation is available under a commercial 
+> license or private consulting engagement.
+>
+> **Commercial Inquiries & Consulting:** ayman.aitberahou@outlook.com
+
 ---
 
 ## Table of Contents
