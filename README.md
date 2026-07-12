@@ -1,5 +1,7 @@
 # The Sovereign Sentinel
 ### Real-Time Forex Trading Data Pipeline — Audit-Ready for Tier-1 Financial Institutions
+## 🔴 Live Dashboard
+**[live.sovereignds.com](https://live.sovereignds.com)** — Real-time forex tick data, continuously updated.
 
 [![DORA Compliant](https://img.shields.io/badge/DORA-Compliant-0052CC?style=flat-square)](https://www.digital-operational-resilience-act.com/)
 [![FINMA Aligned](https://img.shields.io/badge/FINMA-Aligned-003366?style=flat-square)](https://www.finma.ch/en/)
@@ -40,6 +42,8 @@
 The **Sovereign Sentinel** is a production-grade, cloud-native data pipeline engineered to ingest, process, persist, and audit high-velocity Foreign Exchange (Forex) tick data in real time. The system is designed from the ground up to satisfy the operational resilience mandates of the **Digital Operational Resilience Act (DORA)** (EU Regulation 2022/2554) and the **Swiss Financial Market Supervisory Authority (FINMA)** Circular 2023/1 on operational risks.
 
 This is not a best-effort prototype. Every architectural decision — from Kafka's replication topology to Kubernetes Pod Security Admission configuration — has a traceable compliance rationale documented in the [DORA/FINMA Compliance Matrix](./docs/compliance-matrix.md).
+
+**Live deployment:** [live.sovereignds.com](https://live.sovereignds.com)
 
 **Core Design Invariants:**
 
