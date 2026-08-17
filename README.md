@@ -1,25 +1,47 @@
 # The Sovereign Sentinel
 ### Real-Time Forex Trading Data Pipeline — Audit-Ready for Tier-1 Financial Institutions
 ## 🔴 Live Dashboard
-**[live.sovereignds.com](https://live.sovereignds.com)** — Real-time forex tick data, continuously updated.
+**[live.sovereignds.com](https://live.sovereignds.com/public-dashboards/12e03aab18ed4437adf46ca57cfb740f)** — Real-time forex tick data, continuously updated.
+>
+> Live PoC currently streams 4 pairs verified as actively trading on the upstream feed (EUR/USD, XAU/USD, PAXG/USD, USDC/USD) — not the full 24-pair production scope described below. See §6 for the distinction between PoC and full production sizing.
 
-[![DORA Compliant](https://img.shields.io/badge/DORA-Compliant-0052CC?style=flat-square)](https://www.digital-operational-resilience-act.com/)
-[![FINMA Aligned](https://img.shields.io/badge/FINMA-Aligned-003366?style=flat-square)](https://www.finma.ch/en/)
-[![CKS Hardened](https://img.shields.io/badge/Kubernetes-CKS%20Hardened-326CE5?style=flat-square&logo=kubernetes)](https://training.linuxfoundation.org/certification/certified-kubernetes-security-specialist/)
+[![DORA-Aligned Architecture](https://img.shields.io/badge/DORA-Aligned%20Architecture-0052CC?style=flat-square)](https://www.digital-operational-resilience-act.com/)
+[![FINMA-Aligned Design](https://img.shields.io/badge/FINMA-Aligned%20Design-003366?style=flat-square)](https://www.finma.ch/en/)
+[![Kubernetes Target: CKS Hardening](https://img.shields.io/badge/Kubernetes%20Target-CKS%20Hardening-326CE5?style=flat-square&logo=kubernetes)](https://training.linuxfoundation.org/certification/certified-kubernetes-security-specialist/)
 [![Kafka](https://img.shields.io/badge/Apache%20Kafka-3.7.x-231F20?style=flat-square&logo=apachekafka)](https://kafka.apache.org/)
-[![Spark](https://img.shields.io/badge/Apache%20Spark-3.5.x-E25A1C?style=flat-square&logo=apachespark)](https://spark.apache.org/)
+[![Spark Target](https://img.shields.io/badge/Apache%20Spark%20Target-3.5.x-E25A1C?style=flat-square&logo=apachespark)](https://spark.apache.org/)
 
-> **Notice:** Architecture, compliance documentation, and design 
-> specifications are published for public evaluation. The full, 
-> production-ready implementation is available under a commercial 
-> license or private consulting engagement.
+> **Notice:** This repository publishes architecture, compliance
+> mapping, and design specifications for public evaluation. See
+> **Implementation Status** immediately below for exactly which parts
+> are live today versus designed as the production target. Detailed
+> production manifests (Kubernetes, Helm, Spark job source, compliance
+> runbooks) are maintained in a private repository, available on
+> request for serious engagements.
 >
 > **Commercial Inquiries & Consulting:** ayman.aitberahou@outlook.com
 
 ---
 
+## Implementation Status
+
+| Layer | Status | Detail |
+|---|---|---|
+| Live Binance WebSocket → Kafka ingestion | **Live today** | 3-broker Kafka cluster, JDK WebSocket client with reconnect-with-backoff, systemd process supervision |
+| Prometheus + Grafana observability | **Live today** | The dashboard linked above — real-time tick/spread/size metrics per pair, publicly viewable |
+| ClickHouse | **Deployed, not yet wired end-to-end** | Running as a container; the Spark validation stage that would populate it from live ticks isn't deployed yet |
+| Kubernetes, Istio mTLS, HashiCorp Vault, Falco, OPA Gatekeeper | **Architected, not deployed** | Documented below as the production-target hardening layer this system is designed to scale into |
+| Spark Structured Streaming (validation + aggregation jobs) | **Architected, not deployed** | Design and schema contracts documented; not running against the live PoC |
+| Apache Iceberg cold storage, OpenLineage/Marquez lineage | **Architected, not deployed** | Part of the production-target design |
+| Quarterly DR drills, chaos testing schedule, 10-year audit retention | **Architected, not exercised** | Procedures documented; not yet run against a live cluster |
+
+Everything below this section documents a **production-target architecture** — real design work, with a traceable compliance rationale — that this live PoC is designed to grow into. The ingestion, observability, and connection-level resilience layers are live and demonstrable right now via the dashboard above; the distributed storage, service mesh, and security-hardening layers are designed but not yet built.
+
+---
+
 ## Table of Contents
 
+0. [Implementation Status](#implementation-status)
 1. [Executive Summary](#1-executive-summary)
 2. [Regulatory Context](#2-regulatory-context)
 3. [System Architecture](#3-system-architecture)
@@ -39,11 +61,11 @@
 
 ## 1. Executive Summary
 
-The **Sovereign Sentinel** is a production-grade, cloud-native data pipeline engineered to ingest, process, persist, and audit high-velocity Foreign Exchange (Forex) tick data in real time. The system is designed from the ground up to satisfy the operational resilience mandates of the **Digital Operational Resilience Act (DORA)** (EU Regulation 2022/2554) and the **Swiss Financial Market Supervisory Authority (FINMA)** Circular 2023/1 on operational risks.
+The **Sovereign Sentinel** is a cloud-native data pipeline architected to ingest, process, persist, and audit high-velocity Foreign Exchange (Forex) tick data in real time, designed from the ground up to map to the operational resilience mandates of the **Digital Operational Resilience Act (DORA)** (EU Regulation 2022/2554) and the **Swiss Financial Market Supervisory Authority (FINMA)** Circular 2023/1 on operational risks. See **Implementation Status** above for what's live today versus designed as the production target.
 
-This is not a best-effort prototype. Every architectural decision — from Kafka's replication topology to Kubernetes Pod Security Admission configuration — has a traceable compliance rationale documented in the [DORA/FINMA Compliance Matrix](./docs/compliance-matrix.md).
+Every architectural decision — from Kafka's replication topology to Kubernetes Pod Security Admission configuration — has a traceable compliance rationale, documented in the [DORA/FINMA Compliance Matrix](./docs/compliance-matrix.md), even where the corresponding infrastructure isn't deployed yet.
 
-**Live deployment:** [live.sovereignds.com](https://live.sovereignds.com)
+**Live deployment:** [live.sovereignds.com](https://live.sovereignds.com/public-dashboards/12e03aab18ed4437adf46ca57cfb740f)
 
 **Core Design Invariants:**
 
@@ -53,7 +75,7 @@ This is not a best-effort prototype. Every architectural decision — from Kafka
 | Zero data loss under network partition | Kafka partition leadership re-election + consumer offset commits post-persistence |
 | Immutable audit log | Kafka topic with `cleanup.policy=compact,delete` + Apache Iceberg cold storage (append-only, snapshot-isolated, time-travel enabled) |
 | Sub-second observability | Prometheus scrape interval `5s` on all critical financial processing components |
-| Least-privilege runtime | CKS-compliant RBAC + seccomp/AppArmor profiles on all workload pods |
+| Least-privilege runtime (target) | CKS-aligned RBAC + seccomp/AppArmor profiles on all workload pods |
 | Financial precision contract | IEEE 754 `double` at transport layer; cast to `Decimal(18,8)` on persistence into ClickHouse and Iceberg storage tiers |
 | Cryptographic integrity | TLS 1.3 enforced on all inter-service communication via Istio mTLS |
 
@@ -223,7 +245,7 @@ The persistence layer implements a **dual-sink, tiered storage architecture** �
 4. Schema evolution is governed by the same Confluent Schema Registry contract used at ingestion. Iceberg's hidden partitioning absorbs schema additions without table rewrites.
 
 **Data Lineage — OpenLineage + Marquez:**
-Every batch write to both tiers emits an OpenLineage `RunEvent` to the Marquez lineage server, recording the Kafka source offset range, the target dataset, and the processing job version. This creates a DORA-compliant, end-to-end provenance graph traceable from raw WebSocket tick to persisted Iceberg snapshot.
+Designed so every batch write to both tiers would emit an OpenLineage `RunEvent` to a Marquez lineage server, recording the Kafka source offset range, the target dataset, and the processing job version — an end-to-end provenance graph traceable from raw WebSocket tick to persisted Iceberg snapshot, mapping to DORA's provenance requirements. Not deployed in the live PoC (see Implementation Status).
 
 This design guarantees: **a record confirmed as written to ClickHouse has a corresponding committed Kafka offset; a committed Kafka offset guarantees a record in both the hot and cold tiers.** There is no window in which a record can be in one system but not the other.
 
@@ -261,7 +283,7 @@ The canonical schema for the ingestion boundary (`forex.ticks.raw`) is:
 - `BACKWARD_TRANSITIVE` compatibility: all existing consumers remain unbroken on any schema version.
 - Required fields may never be removed; optional fields must carry a `null` default.
 - Pragmatic precision: Financial values are transported as IEEE 754 `double` for low-latency JVM processing, but are strictly cast to `Decimal(18,8)` upon persistence into the ClickHouse and Iceberg storage tiers to prevent historical rounding errors.
-- Every schema change requires a pull request with a compliance sign-off from the Financial Infrastructure Team lead.
+- Designed for a workflow where every schema change requires a pull request with an explicit compliance sign-off before merge — a governance pattern any real deployment of this architecture would need, not a rule currently enforced by tooling in this repo.
 
 ---
 
@@ -379,7 +401,7 @@ Capability sets are explicitly constrained: `ALL` capabilities dropped; no capab
 
 ### 7.3 mTLS via Istio Service Mesh
 
-All inter-pod communication is encrypted at the transport layer via Istio's automatic mTLS injection. `PeerAuthentication` policies are set to `STRICT` mode cluster-wide — unauthenticated plaintext connections between Sentinel services are refused at the mesh layer. This satisfies DORA Article 9 (encryption in transit) and FINMA Rz 57 (data integrity during transmission).
+Designed so all inter-pod communication would be encrypted at the transport layer via Istio's automatic mTLS injection, with `PeerAuthentication` policies set to `STRICT` mode cluster-wide — unauthenticated plaintext connections between Sentinel services refused at the mesh layer, mapping to DORA Article 9 (encryption in transit) and FINMA Rz 57 (data integrity during transmission). Not deployed in the live PoC (see Implementation Status) — the live system currently relies on TLS termination at Nginx/Cloudflare rather than a service mesh.
 
 ### 7.4 Secret Management
 
@@ -415,7 +437,7 @@ The complete image inventory with digest pins is maintained in [k8s/image-manife
 
 ### 8.1 Prometheus Metrics
 
-The following custom metrics are exposed by Sentinel components and are considered **mandatory operational metrics** for DORA Article 10 compliance:
+The following custom metrics are designed as the mandatory operational metric set for DORA Article 10 alignment. The live PoC currently exposes a subset of these (tick rate, queue depth, bid/ask/spread per pair — visible on the dashboard above); the rest are part of the full production-target design:
 
 | Metric | Type | Description | Alert Threshold |
 |---|---|---|---|
@@ -458,43 +480,35 @@ DR test results are documented in [docs/dr-test-log.md](./docs/dr-test-log.md) a
 
 ## 10. Repository Structure
 
+**Actual current contents of this public repository:**
+
 ```
 sovereign-sentinel/
 ├── README.md                          # This document
+├── LICENSE
+├── docker-compose-reference.yml       # Redacted reference compose (config omitted)
 ├── docs/
 │   ├── compliance-matrix.md           # DORA/FINMA compliance traceability
-│   ├── architecture-decision-records/ # ADRs for key design decisions
-│   ├── dr-test-log.md                 # Disaster recovery test history
-│   ├── data-retention-policy.md       # Data lifecycle and retention policy
-│   └── threat-model.md                # STRIDE threat model
-├── k8s/
-│   ├── namespaces/                    # Namespace definitions with labels
-│   ├── rbac/                          # ClusterRoles, Roles, Bindings
-│   ├── network-policies/              # NetworkPolicy manifests per namespace
-│   ├── pod-security/                  # PodSecurityPolicy / PSS configurations
-│   ├── ingestion/                     # Kafka Connect deployment manifests
-│   ├── streaming/                     # Kafka cluster manifests (Strimzi CRDs)
-│   ├── processing/                    # Spark Operator + SparkApplication CRDs
-│   ├── persistence/                   # ClickHouse cluster & Iceberg/MinIO manifests
-│   ├── observability/                 # Prometheus, Alertmanager, Grafana manifests
-│   ├── security/                      # Vault, Falco, OPA Gatekeeper, CertManager
-│   └── image-manifest.yaml            # Pinned image digest inventory
-├── spark-jobs/
-│   ├── validation/                    # Spark Job 1 source (Scala/Python)
-│   └── aggregation/                   # Spark Job 2 source (Scala/Python)
-├── kafka-connect/
-│   └── fx-source-connector/           # Custom connector source
-├── scripts/
-│   ├── audit-integrity-check.sh       # Hash chain verification
-│   ├── dr-test/                       # Automated DR test scripts
-│   └── chaos/                         # Chaos engineering scripts (pod kill, AZ failure)
-├── helm/
-│   └── sovereign-sentinel/            # Umbrella Helm chart
-└── ci/
-    ├── pipeline.yaml                  # CI/CD pipeline definition
-    ├── cosign/                        # Image signing configuration
-    └── trivy-policy.yaml              # Vulnerability gate policy
+│   └── architecture-current.svg       # Architecture diagram
+└── schemas/
+    └── forex-tick-raw.avsc            # Canonical Avro schema for the ingestion boundary
 ```
+
+**Planned repository structure (production target, not present in this public repo):**
+
+The full implementation — Kubernetes manifests, Helm charts, Spark job source, CI/CD pipeline, chaos/DR scripts — is maintained in a private repository. Its planned structure:
+
+```
+sovereign-sentinel-private/
+├── k8s/                                # Namespaces, RBAC, network policies, pod security, per-layer manifests
+├── spark-jobs/                         # Validation + aggregation job source
+├── kafka-connect/                      # Custom FX source connector
+├── scripts/                            # Audit integrity check, DR test, chaos engineering scripts
+├── helm/                               # Umbrella Helm chart
+└── ci/                                 # CI/CD pipeline, image signing, vulnerability gate policy
+```
+
+Available on request for serious engagements — see the commercial inquiries contact above.
 
 ---
 
@@ -518,6 +532,8 @@ sovereign-sentinel/
 ---
 
 ## 12. Deployment Procedure
+
+> This procedure targets the full production architecture (§10's "planned" structure — `k8s/`, `helm/`, `scripts/`), maintained in the private repository. It documents how that build would be deployed; it isn't runnable against this public repo's contents.
 
 ### 12.1 Cluster Preparation
 
@@ -584,6 +600,8 @@ istioctl x describe service kafka-broker -n sentinel-streaming
 
 ## 13. Operational Runbook Reference
 
+> These runbooks are part of the production-target design, maintained in the private repository — not present in this public repo.
+
 | Scenario | Runbook |
 |---|---|
 | Kafka consumer lag growing | [docs/runbooks/kafka-lag.md](./docs/runbooks/kafka-lag.md) |
@@ -620,7 +638,5 @@ All third-party dependencies are pinned to immutable versions. This table consti
 
 ---
 
-*This document is classified as: **INTERNAL — INFRASTRUCTURE CONFIDENTIAL***
-*Last reviewed: per CI pipeline on every merge to `main`*
-*Owner: Platform Engineering — Financial Infrastructure Team*
-*Regulatory contact: Chief Technology Risk Officer*
+*Designed and built solo by Ayman Ait Berahou — open to consulting engagements and freelance contracts.*
+*Commercial inquiries: ayman.aitberahou@outlook.com*
