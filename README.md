@@ -385,19 +385,11 @@ This three-tier back-pressure design ensures that overload conditions degrade gr
 
 ### 7.1 Kubernetes Hardening (CKS Standards)
 
-All workload pods are deployed under the `Restricted` Pod Security Standard (PSS) enforced via Pod Security Admission (`PodSecurity` admission controller). No pod in the system runs with:
-
-- `runAsRoot: true`
-- `privileged: true`
-- `hostNetwork: true` or `hostPID: true`
-- `allowPrivilegeEscalation: true`
-- Writable root filesystem (`readOnlyRootFilesystem: false`)
-
-Capability sets are explicitly constrained: `ALL` capabilities dropped; no capabilities added except `NET_BIND_SERVICE` where strictly required (and only on specific containers).
+Designed so all workload pods would run under the `Restricted` Pod Security Standard (PSS), enforced via Pod Security Admission (`PodSecurity` admission controller) — no pod permitted `runAsRoot: true`, `privileged: true`, `hostNetwork: true`/`hostPID: true`, `allowPrivilegeEscalation: true`, or a writable root filesystem, with capability sets constrained to `ALL` dropped except `NET_BIND_SERVICE` where strictly required. **Not deployed in the live PoC** (see Implementation Status) — there's no Kubernetes cluster running today; this is the production-target hardening design maintained in the private repository.
 
 ### 7.2 Network Policy Enforcement
 
-`NetworkPolicy` resources enforce a **default-deny-all** posture at the namespace level. Allowlists are applied surgically per workload. No cross-namespace communication is permitted unless explicitly modelled in a `NetworkPolicy` manifest. The manifests are in [k8s/network-policies/](./k8s/network-policies/).
+Designed so `NetworkPolicy` resources would enforce a **default-deny-all** posture at the namespace level, with allowlists applied surgically per workload. Manifests for this are maintained in the private repository (`k8s/network-policies/` — see §10's planned structure), not present here. **Not deployed in the live PoC.**
 
 ### 7.3 mTLS via Istio Service Mesh
 
@@ -405,31 +397,15 @@ Designed so all inter-pod communication would be encrypted at the transport laye
 
 ### 7.4 Secret Management
 
-All secrets (Kafka credentials, ClickHouse credentials, TLS certificates, FX feed API keys) are managed by **HashiCorp Vault** with the Kubernetes auth backend. The Vault Agent Injector sidecar delivers secrets to pods as in-memory tmpfs-mounted files — secrets are never stored in Kubernetes `Secret` objects, etcd, or container images.
-
-CertManager handles automated TLS certificate issuance and rotation for all internal services with a maximum certificate lifetime of 90 days and automated renewal at 80% of lifetime.
+Designed so all secrets (Kafka credentials, ClickHouse credentials, TLS certificates, FX feed API keys) would be managed by **HashiCorp Vault** with the Kubernetes auth backend, delivered to pods via the Vault Agent Injector sidecar as in-memory tmpfs-mounted files — never stored in Kubernetes `Secret` objects, etcd, or container images. **Not deployed in the live PoC.** The live system's actual secrets today (Grafana admin credentials, TLS certs) are handled by environment variables and Certbot/Let's Encrypt respectively — simpler mechanisms appropriate to its current scale, not the Vault-based design described here.
 
 ### 7.5 Runtime Threat Detection
 
-Falco is deployed as a DaemonSet with a custom ruleset covering Sentinel-specific threat signatures:
-
-- Unexpected outbound connections from processing pods (potential data exfiltration)
-- `exec` calls into running Kafka or Spark JVM pods
-- Unexpected file writes to non-tmpfs mounts from Spark executors
-- Privilege escalation attempts within any Sentinel namespace
-
-Falco alerts are routed to the Prometheus alerting pipeline with a `severity: critical` label for immediate PagerDuty notification.
+Designed so Falco would run as a DaemonSet with a custom ruleset covering Sentinel-specific threat signatures — unexpected outbound connections from processing pods, `exec` calls into running Kafka/Spark JVM pods, unexpected file writes to non-tmpfs mounts, privilege escalation attempts — routed to the Prometheus alerting pipeline with a `severity: critical` label. **Not deployed in the live PoC.**
 
 ### 7.6 Supply Chain Security
 
-All container images are:
-
-- Built from verified base images pinned to immutable SHA256 digests
-- Scanned by Trivy at build time (CRITICAL/HIGH CVEs fail the CI pipeline)
-- Signed with Cosign and verified by OPA/Gatekeeper admission policy (unsigned images are rejected at admission)
-- Stored in a private container registry with immutable tags
-
-The complete image inventory with digest pins is maintained in [k8s/image-manifest.yaml](./k8s/image-manifest.yaml).
+Designed so all container images would be built from verified base images pinned to immutable SHA256 digests, scanned by Trivy at build time (CRITICAL/HIGH CVEs failing the CI pipeline), signed with Cosign and verified by OPA/Gatekeeper admission policy, and stored in a private container registry with immutable tags. **Not deployed in the live PoC** — there's no CI/CD pipeline or image-signing infrastructure running today. The planned image inventory with digest pins would live at `k8s/image-manifest.yaml` in the private repository (see §10).
 
 ---
 
@@ -452,18 +428,20 @@ The following custom metrics are designed as the mandatory operational metric se
 
 ### 8.2 Audit Trail Architecture
 
-The `forex.audit.events` Kafka topic and the **Apache Iceberg cold storage tier** constitute the **tamper-evident audit trail** required by FINMA Rz 94. Design properties:
+Designed so the `forex.audit.events` Kafka topic and an **Apache Iceberg cold storage tier** would constitute a tamper-evident audit trail mapping to FINMA Rz 94. Design properties:
 
 - **Append-only**: Iceberg's immutable snapshot model makes it physically impossible to mutate or delete committed data files. Every write creates a new snapshot; no snapshot is ever overwritten.
-- **Cryptographic chaining**: Each audit record includes a `prev_record_hash` field (SHA-256 of the previous record's canonical representation), creating a hash chain detectable via integrity check procedures in [scripts/audit-integrity-check.sh](./scripts/audit-integrity-check.sh).
-- **10-year retention**: Iceberg partitions by `(event_type, month)` on S3/MinIO with lifecycle policies enforcing immutability for 10 years. Time-travel queries (`SELECT ... AS OF TIMESTAMP`) provide point-in-time retrieval with SLA of < 4 hours. Retention policy documented in [docs/data-retention-policy.md](./docs/data-retention-policy.md).
-- **Non-repudiation**: All audit events carry the Kafka producer principal (mTLS client certificate CN) as `event_source_principal` — establishing a cryptographically-verified chain of custody from ingestion to persistence.
+- **Cryptographic chaining**: Each audit record would include a `prev_record_hash` field (SHA-256 of the previous record's canonical representation), creating a hash chain — verification procedure planned at `scripts/audit-integrity-check.sh` in the private repository (see §10), not present in this public repo.
+- **10-year retention**: Iceberg partitions by `(event_type, month)` on S3/MinIO with lifecycle policies enforcing immutability for 10 years. Time-travel queries (`SELECT ... AS OF TIMESTAMP`) provide point-in-time retrieval with SLA of < 4 hours. Retention policy planned at `docs/data-retention-policy.md` in the private repository, not present here.
+- **Non-repudiation**: All audit events would carry the Kafka producer principal (mTLS client certificate CN) as `event_source_principal` — a cryptographically-verified chain of custody from ingestion to persistence.
+
+**Not deployed in the live PoC** — Apache Iceberg, the hash-chain audit trail, and the integrity-check tooling described above are part of the production-target design, not running today.
 
 ---
 
 ## 9. Disaster Recovery & RTO/RPO Targets
 
-These targets are commitments against which the system must be tested under DORA Article 11 (ICT Business Continuity).
+These targets are the commitments the production-target system is designed against, per DORA Article 11 (ICT Business Continuity). **None of these scenarios have been tested against the live PoC** — there's no Kubernetes cluster, Spark deployment, or ClickHouse-in-the-critical-path today for chaos/DR testing to exercise. See Implementation Status.
 
 | Scenario | RTO | RPO | Validation Method |
 |---|---|---|---|
@@ -474,7 +452,7 @@ These targets are commitments against which the system must be tested under DORA
 | Full namespace failure | < 5 minutes | 0 | Quarterly full namespace recreation test |
 | Full cluster failure (cross-region) | < 30 minutes | < 30 seconds of tick data | Annual DR test with cross-region failover |
 
-DR test results are documented in [docs/dr-test-log.md](./docs/dr-test-log.md) and submitted as evidence in the annual DORA operational resilience assessment.
+Designed so DR test results would be logged at `docs/dr-test-log.md` in the private repository (see §10) and submitted as evidence in an annual DORA operational resilience assessment — once there's an actual cluster to run these tests against.
 
 ---
 
