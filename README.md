@@ -1,5 +1,5 @@
 # The Sovereign Sentinel
-### Real-Time Forex Trading Data Pipeline — Audit-Ready for Tier-1 Financial Institutions
+### Real-Time Forex Data Pipeline — PoC Live, Architected for Tier-1 Audit-Readiness
 ## 🔴 Live Dashboard
 **[live.sovereignds.com](https://live.sovereignds.com/public-dashboards/12e03aab18ed4437adf46ca57cfb740f)** — Real-time forex tick data, continuously updated.
 >
