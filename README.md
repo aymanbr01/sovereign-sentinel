@@ -37,6 +37,8 @@
 
 Everything below this section documents a **production-target architecture** — real design work, with a traceable compliance rationale — that this live PoC is designed to grow into. The ingestion, observability, and connection-level resilience layers are live and demonstrable right now via the dashboard above; the distributed storage, service mesh, and security-hardening layers are designed but not yet built.
 
+**Related project:** [repo-pulse](https://github.com/aymanbr01/repo-pulse) — a second, smaller project showing the same validation and idempotency discipline in a different domain: a scheduled ETL pipeline tracking GitHub health metrics for major data-engineering tools, built and verified end to end.
+
 ---
 
 ## Table of Contents
