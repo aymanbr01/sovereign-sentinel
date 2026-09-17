@@ -29,13 +29,13 @@
 |---|---|---|
 | Live Binance WebSocket → Kafka ingestion | **Live today** | 3-broker Kafka cluster, JDK WebSocket client with reconnect-with-backoff, systemd process supervision |
 | Prometheus + Grafana observability | **Live today** | The dashboard linked above — real-time tick/spread/size metrics per pair, publicly viewable |
-| ClickHouse | **Deployed, not yet wired end-to-end** | Running as a container; the Spark validation stage that would populate it from live ticks isn't deployed yet |
+| ClickHouse | **Live today** | Populated end-to-end by a lightweight Python consumer reading directly from Kafka — not by Spark, which remains undeployed (see below). Backs the dashboard's durable rolling 30-day tick totals |
 | Kubernetes, Istio mTLS, HashiCorp Vault, Falco, OPA Gatekeeper | **Architected, not deployed** | Documented below as the production-target hardening layer this system is designed to scale into |
 | Spark Structured Streaming (validation + aggregation jobs) | **Architected, not deployed** | Design and schema contracts documented; not running against the live PoC |
 | Apache Iceberg cold storage, OpenLineage/Marquez lineage | **Architected, not deployed** | Part of the production-target design |
 | Quarterly DR drills, chaos testing schedule, 10-year audit retention | **Architected, not exercised** | Procedures documented; not yet run against a live cluster |
 
-Everything below this section documents a **production-target architecture** — real design work, with a traceable compliance rationale — that this live PoC is designed to grow into. The ingestion, observability, and connection-level resilience layers are live and demonstrable right now via the dashboard above; the distributed storage, service mesh, and security-hardening layers are designed but not yet built.
+Everything below this section documents a **production-target architecture** — real design work, with a traceable compliance rationale — that this live PoC is designed to grow into. The ingestion, observability, connection-level resilience, and hot-tier ClickHouse persistence layers are live and demonstrable right now via the dashboard above; Apache Iceberg cold storage, the service mesh, and the security-hardening layers are designed but not yet built.
 
 **Related project:** [repo-pulse](https://github.com/aymanbr01/repo-pulse) — a second, smaller project showing the same validation and idempotency discipline in a different domain: a scheduled ETL pipeline tracking GitHub health metrics for major data-engineering tools, built and verified end to end.
 
@@ -443,7 +443,7 @@ Designed so the `forex.audit.events` Kafka topic and an **Apache Iceberg cold st
 
 ## 9. Disaster Recovery & RTO/RPO Targets
 
-These targets are the commitments the production-target system is designed against, per DORA Article 11 (ICT Business Continuity). **None of these scenarios have been tested against the live PoC** — there's no Kubernetes cluster, Spark deployment, or ClickHouse-in-the-critical-path today for chaos/DR testing to exercise. See Implementation Status.
+These targets are the commitments the production-target system is designed against, per DORA Article 11 (ICT Business Continuity). **None of these scenarios have been tested as a formal program against the live PoC** — there's no Kubernetes cluster or Spark deployment today for chaos/DR testing to exercise. ClickHouse is genuinely in the critical path now (see Implementation Status), but only ad-hoc failure testing has been done against it, not the scheduled program described here.
 
 | Scenario | RTO | RPO | Validation Method |
 |---|---|---|---|
