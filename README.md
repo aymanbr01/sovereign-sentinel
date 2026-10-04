@@ -1,7 +1,6 @@
 # The Sovereign Sentinel
 ### Real-Time Forex Data Pipeline — PoC Live, Architected for Tier-1 Audit-Readiness
-## 🔴 Live Dashboard
-**[live.sovereignds.com](https://live.sovereignds.com/public-dashboards/12e03aab18ed4437adf46ca57cfb740f)** — Real-time forex tick data, continuously updated.
+
 >
 > Live PoC currently streams 4 pairs verified as actively trading on the upstream feed (EUR/USD, XAU/USD, PAXG/USD, USDC/USD) — not the full 24-pair production scope described below. See §6 for the distinction between PoC and full production sizing.
 
